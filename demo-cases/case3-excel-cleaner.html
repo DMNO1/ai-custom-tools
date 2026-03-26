@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel数据清洗工具 - AI定制工具演示</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; }
+        .header h1 { font-size: 24px; }
+        .header p { opacity: 0.8; font-size: 14px; margin-top: 5px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .upload-zone { border: 3px dashed #ddd; border-radius: 16px; padding: 60px; text-align: center; background: white; margin-bottom: 24px; transition: all 0.3s; cursor: pointer; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #f5576c; background: #fff5f5; }
+        .upload-zone .icon { font-size: 48px; margin-bottom: 16px; }
+        .upload-zone h3 { color: #333; margin-bottom: 8px; }
+        .upload-zone p { color: #999; font-size: 14px; }
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-pink { background: #f5576c; color: white; }
+        .btn-pink:hover { background: #e84558; }
+        .btn-outline { background: white; color: #f5576c; border: 2px solid #f5576c; }
+        .btn-outline:hover { background: #f5576c; color: white; }
+        .btn-blue { background: #667eea; color: white; }
+        .btn-green { background: #2ed573; color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .info-bar { background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 24px; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .info-item { font-size: 14px; }
+        .info-item strong { color: #f5576c; }
+        .data-table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 12px 14px; text-align: left; font-size: 13px; color: #666; font-weight: 600; border-bottom: 2px solid #eee; position: sticky; top: 0; white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 13px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        tr:hover { background: #fff5f8; }
+        .op-bar { display: flex; gap: 8px; align-items: center; }
+        .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 16px; border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .num { font-size: 24px; font-weight: bold; color: #f5576c; }
+        .stat-card .label { font-size: 12px; color: #999; margin-top: 4px; }
+        .hidden { display: none; }
+        .ops-panel { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .ops-panel h3 { margin-bottom: 16px; color: #333; font-size: 16px; }
+        .op-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .op-group label { font-size: 13px; color: #666; min-width: 100px; line-height: 32px; }
+        .op-group input, .op-group select { padding: 6px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 13px; }
+        .log { background: #f8f9fa; border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 13px; color: #666; max-height: 150px; overflow-y: auto; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #eee; }
+        .log-entry:last-child { border: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Excel数据清洗工具</h1>
+        <p>上传Excel → 智能去重 → 筛选排序 → 导出结果</p>
+    </div>
+    <div class="container">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="icon">📁</div>
+            <h3>点击或拖拽上传Excel文件</h3>
+            <p>支持 .xlsx / .xls / .csv 格式，文件仅在浏览器本地处理，不会上传到服务器</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" style="display:none">
+        </div>
+
+        <div id="workspace" class="hidden">
+            <div class="stat-cards">
+                <div class="stat-card"><div class="num" id="s_rows">0</div><div class="label">总行数</div></div>
+                <div class="stat-card"><div class="num" id="s_cols">0</div><div class="label">列数</div></div>
+                <div class="stat-card"><div class="num" id="s_dupes">0</div><div class="label">重复行</div></div>
+                <div class="stat-card"><div class="num" id="s_empties">0</div><div class="label">空行</div></div>
+            </div>
+
+            <div class="ops-panel">
+                <h3>🔧 清洗操作</h3>
+                <div class="op-group">
+                    <label>去重依据列:</label>
+                    <select id="dedupCol"><option value="__all__">整行去重</option></select>
+                    <button class="btn btn-pink btn-sm" onclick="deduplicate()">去重</button>
+                </div>
+                <div class="op-group">
+                    <label>删除空行:</label>
+                    <button class="btn btn-blue btn-sm" onclick="removeEmpty()">删除全部空行</button>
+                </div>
+                <div class="op-group">
+                    <label>筛选条件:</label>
+                    <select id="filterCol"></select>
+                    <select id="filterOp"><option value="contains">包含</option><option value="equals">等于</option><option value="not_empty">非空</option></select>
+                    <input type="text" id="filterVal" placeholder="值">
+                    <button class="btn btn-blue btn-sm" onclick="applyFilter()">筛选</button>
+                    <button class="btn btn-outline btn-sm" onclick="resetFilter()">重置</button>
+                </div>
+                <div class="op-group">
+                    <label>排序:</label>
+                    <select id="sortCol"></select>
+                    <select id="sortDir"><option value="asc">升序 ↑</option><option value="desc">降序 ↓</option></select>
+                    <button class="btn btn-blue btn-sm" onclick="sortData()">排序</button>
+                </div>
+                <div class="op-group">
+                    <label>删除指定列:</label>
+                    <select id="delCol" multiple style="height:80px;min-width:200px"></select>
+                    <button class="btn btn-pink btn-sm" onclick="deleteColumns()">删除选中列</button>
+                </div>
+                <div class="log" id="opLog">
+                    <div class="log-entry">🟢 工具就绪，等待操作...</div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <span style="font-size:14px;color:#666" id="viewInfo"></span>
+                <div style="margin-left:auto;display:flex;gap:8px;">
+                    <button class="btn btn-green" onclick="exportXLSX()">📥 导出Excel</button>
+                    <button class="btn btn-outline" onclick="exportCSV()">📄 导出CSV</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📂 重新上传</button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table id="dataTable"><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rawData = [];  // original data array of arrays
+        let headers = [];
+        let currentData = [];
+
+        // Drag & drop
+        const zone = document.getElementById('uploadZone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFileObj(e.dataTransfer.files[0]); });
+
+        function handleFile(e) { if (e.target.files[0]) handleFileObj(e.target.files[0]); }
+
+        function handleFileObj(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const wb = XLSX.read(e.target.result, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                if (data.length < 2) { alert('文件数据不足（至少需要表头+1行数据）'); return; }
+                headers = data[0].map((h, i) => String(h || `列${i+1}`));
+                rawData = data.slice(1);
+                currentData = [...rawData];
+                initUI();
+                log(`📂 已加载文件: ${file.name}，${rawData.length} 行 × ${headers.length} 列`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function initUI() {
+            document.getElementById('uploadZone').classList.add('hidden');
+            document.getElementById('workspace').classList.remove('hidden');
+            populateColSelects();
+            render();
+        }
+
+        function populateColSelects() {
+            const selects = ['dedupCol', 'filterCol', 'sortCol', 'delCol'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                el.innerHTML = id === 'dedupCol' ? '<option value="__all__">整行去重</option>' : '';
+                headers.forEach((h, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.textContent = h;
+                    el.appendChild(opt);
+                });
+            });
+        }
+
+        function render() {
+            document.getElementById('s_rows').textContent = currentData.length;
+            document.getElementById('s_cols').textContent = headers.length;
+            document.getElementById('s_dupes').textContent = countDuplicates();
+            document.getElementById('s_empties').textContent = currentData.filter(r => r.every(c => !c)).length;
+            document.getElementById('viewInfo').textContent = `显示 ${currentData.length} 行 × ${headers.length} 列`;
+
+            document.getElementById('tableHead').innerHTML = '<tr>' + headers.map(h => `<th>${esc(h)}</th>`).join('') + '</tr>';
+            const maxShow = 200;
+            const showing = currentData.slice(0, maxShow);
+            document.getElementById('tableBody').innerHTML = showing.map(row =>
+                '<tr>' + headers.map((_, i) => `<td title="${esc(String(row[i]||''))}">${esc(String(row[i]||''))}</td>`).join('') + '</tr>'
+            ).join('') + (currentData.length > maxShow ? `<tr><td colspan="${headers.length}" style="text-align:center;color:#999">... 仅显示前 ${maxShow} 行，导出可查看全部</td></tr>` : '');
+        }
+
+        function countDuplicates() {
+            const seen = new Set();
+            let count = 0;
+            currentData.forEach(r => { const key = JSON.stringify(r); if (seen.has(key)) count++; else seen.add(key); });
+            return count;
+        }
+
+        function deduplicate() {
+            const col = document.getElementById('dedupCol').value;
+            const before = currentData.length;
+            const seen = new Set();
+            if (col === '__all__') {
+                currentData = currentData.filter(r => { const k = JSON.stringify(r); if (seen.has(k)) return false; seen.add(k); return true; });
+            } else {
+                const ci = parseInt(col);
+                currentData = currentData.filter(r => { const k = String(r[ci]); if (seen.has(k)) return false; seen.add(k); return true; });
+            }
+            log(`🔧 去重完成：删除 ${before - currentData.length} 行重复数据（依据: ${col === '__all__' ? '整行' : headers[col]}）`);
+            render();
+        }
+
+        function removeEmpty() {
+            const before = currentData.length;
+            currentData = currentData.filter(r => r.some(c => c !== '' && c !== null && c !== undefined));
+            log(`🧹 删除空行：${before - currentData.length} 行已删除`);
+            render();
+        }
+
+        function applyFilter() {
+            const ci = parseInt(document.getElementById('filterCol').value);
+            const op = document.getElementById('filterOp').value;
+            const val = document.getElementById('filterVal').value;
+            const before = currentData.length;
+            currentData = currentData.filter(r => {
+                const cell = String(r[ci] || '');
+                if (op === 'contains') return cell.includes(val);
+                if (op === 'equals') return cell === val;
+                if (op === 'not_empty') return cell.trim() !== '';
+                return true;
+            });
+            log(`🔍 筛选完成：${before} → ${currentData.length} 行（${headers[ci]} ${op} "${val}"）`);
+            render();
+        }
+
+        function resetFilter() {
+            currentData = [...rawData];
+            log('↩️ 已重置为原始数据');
+            render();
+        }
+
+        function sortData() {
+            const ci = parseInt(document.getElementById('sortCol').value);
+            const dir = document.getElementById('sortDir').value;
+            currentData.sort((a, b) => {
+                const va = a[ci], vb = b[ci];
+                const na = parseFloat(va), nb = parseFloat(vb);
+                if (!isNaN(na) && !isNaN(nb)) return dir === 'asc' ? na - nb : nb - na;
+                return dir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+            });
+            log(`📐 排序完成：按 ${headers[ci]} ${dir === 'asc' ? '升序' : '降序'}`);
+            render();
+        }
+
+        function deleteColumns() {
+            const sel = document.getElementById('delCol');
+            const cols = Array.from(sel.selectedOptions).map(o => parseInt(o.value));
+            if (cols.length === 0) { alert('请先选择要删除的列'); return; }
+            const colNames = cols.map(i => headers[i]).join(', ');
+            cols.sort((a, b) => b - a); // delete from right to left
+            cols.forEach(ci => {
+                headers.splice(ci, 1);
+                currentData.forEach(r => r.splice(ci, 1));
+                rawData.forEach(r => r.splice(ci, 1));
+            });
+            populateColSelects();
+            log(`🗑️ 已删除列: ${colNames}`);
+            render();
+        }
+
+        function exportXLSX() {
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...currentData]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '清洗结果');
+            XLSX.writeFile(wb, 'cleaned-data.xlsx');
+            log('📥 已导出 Excel 文件');
+        }
+
+        function exportCSV() {
+            const rows = [headers.join(','), ...currentData.map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(','))];
+            const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'cleaned-data.csv';
+            a.click();
+            log('📄 已导出 CSV 文件');
+        }
+
+        function log(msg) {
+            const el = document.getElementById('opLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            el.appendChild(entry);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    </script>
+</body>
+</html>

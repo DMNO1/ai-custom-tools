@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轻量CRM - AI定制工具演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px; }
+        .header h1 { font-size: 24px; }
+        .header p { opacity: 0.8; font-size: 14px; margin-top: 5px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .stat-card .label { font-size: 13px; color: #999; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: bold; }
+        .stat-card .value.green { color: #11998e; }
+        .stat-card .value.blue { color: #667eea; }
+        .stat-card .value.orange { color: #ffa502; }
+        .stat-card .value.red { color: #ff4757; }
+        .toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .toolbar input { padding: 10px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; flex: 1; min-width: 200px; }
+        .toolbar input:focus { outline: none; border-color: #11998e; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-green { background: #11998e; color: white; }
+        .btn-green:hover { background: #0e8578; }
+        .btn-outline { background: white; color: #11998e; border: 2px solid #11998e; }
+        .btn-outline:hover { background: #11998e; color: white; }
+        .btn-small { padding: 6px 12px; font-size: 12px; }
+        .btn-red { background: #ff4757; color: white; }
+        .table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 14px 16px; text-align: left; font-size: 13px; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        tr:hover { background: #f8fffe; }
+        .status-tag { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .status-active { background: #e8f5e9; color: #2e7d32; }
+        .status-followup { background: #fff8e1; color: #f57f17; }
+        .status-lost { background: #ffebee; color: #c62828; }
+        .status-deal { background: #e3f2fd; color: #1565c0; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 500px; }
+        .modal h2 { margin-bottom: 20px; color: #333; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        .form-group textarea { height: 80px; resize: vertical; }
+        .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+        .empty-state { text-align: center; padding: 60px; color: #999; }
+        .empty-state .emoji { font-size: 48px; }
+        .export-bar { display: flex; gap: 10px; margin-left: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👥 轻量CRM客户管理</h1>
+        <p>客户信息管理 · 跟进记录 · 数据导出 · 本地存储</p>
+    </div>
+    <div class="container">
+        <div class="stats-row">
+            <div class="stat-card"><div class="label">总客户数</div><div class="value green" id="totalClients">0</div></div>
+            <div class="stat-card"><div class="label">活跃客户</div><div class="value blue" id="activeClients">0</div></div>
+            <div class="stat-card"><div class="label">待跟进</div><div class="value orange" id="followupClients">0</div></div>
+            <div class="stat-card"><div class="label">已成交</div><div class="value red" id="dealClients">0</div></div>
+        </div>
+
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="🔍 搜索客户名称、联系人、电话..." oninput="renderTable()">
+            <button class="btn btn-green" onclick="openModal()">➕ 新增客户</button>
+            <div class="export-bar">
+                <button class="btn btn-outline" onclick="exportCSV()">📥 导出CSV</button>
+                <button class="btn btn-outline" onclick="exportJSON()">💾 备份数据</button>
+                <label class="btn btn-outline" style="cursor:pointer">📂 导入<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>公司名称</th><th>联系人</th><th>电话</th><th>来源</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+                <tbody id="clientTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">新增客户</h2>
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>公司名称 *</label><input type="text" id="f_company"></div>
+            <div class="form-group"><label>联系人 *</label><input type="text" id="f_contact"></div>
+            <div class="form-group"><label>电话</label><input type="text" id="f_phone"></div>
+            <div class="form-group"><label>来源</label><select id="f_source"><option value="自然流量">自然流量</option><option value="朋友介绍">朋友介绍</option><option value="闲鱼">闲鱼</option><option value="小红书">小红书</option><option value="知乎">知乎</option><option value="其他">其他</option></select></div>
+            <div class="form-group"><label>状态</label><select id="f_status"><option value="active">活跃</option><option value="followup">待跟进</option><option value="deal">已成交</option><option value="lost">已丢失</option></select></div>
+            <div class="form-group"><label>备注</label><textarea id="f_notes"></textarea></div>
+            <div class="form-actions">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-green" onclick="saveClient()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let clients = JSON.parse(localStorage.getItem('crm-clients') || '[]');
+
+        function save() {
+            localStorage.setItem('crm-clients', JSON.stringify(clients));
+            updateStats();
+            renderTable();
+        }
+
+        function updateStats() {
+            document.getElementById('totalClients').textContent = clients.length;
+            document.getElementById('activeClients').textContent = clients.filter(c => c.status === 'active').length;
+            document.getElementById('followupClients').textContent = clients.filter(c => c.status === 'followup').length;
+            document.getElementById('dealClients').textContent = clients.filter(c => c.status === 'deal').length;
+        }
+
+        function renderTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = clients.filter(c => !query || c.company.toLowerCase().includes(query) || c.contact.toLowerCase().includes(query) || (c.phone||'').includes(query));
+            const tbody = document.getElementById('clientTable');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="emoji">📋</div><p>' + (clients.length === 0 ? '暂无客户，点击上方「新增客户」开始' : '未找到匹配的客户') + '</p></td></tr>';
+                return;
+            }
+            const statusMap = { active: ['活跃', 'status-active'], followup: ['待跟进', 'status-followup'], deal: ['已成交', 'status-deal'], lost: ['已丢失', 'status-lost'] };
+            tbody.innerHTML = filtered.map(c => {
+                const [label, cls] = statusMap[c.status] || ['活跃', 'status-active'];
+                return `<tr>
+                    <td><strong>${esc(c.company)}</strong></td>
+                    <td>${esc(c.contact)}</td>
+                    <td>${esc(c.phone || '-')}</td>
+                    <td>${esc(c.source || '-')}</td>
+                    <td><span class="status-tag ${cls}">${label}</span></td>
+                    <td>${esc((c.notes || '-').substring(0, 30))}</td>
+                    <td>
+                        <button class="btn btn-small btn-outline" onclick="editClient(${c.id})">编辑</button>
+                        <button class="btn btn-small btn-red" onclick="deleteClient(${c.id})">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function openModal(id) {
+            document.getElementById('modalOverlay').classList.add('show');
+            if (id) {
+                const c = clients.find(x => x.id === id);
+                document.getElementById('modalTitle').textContent = '编辑客户';
+                document.getElementById('editId').value = c.id;
+                document.getElementById('f_company').value = c.company;
+                document.getElementById('f_contact').value = c.contact;
+                document.getElementById('f_phone').value = c.phone || '';
+                document.getElementById('f_source').value = c.source || '自然流量';
+                document.getElementById('f_status').value = c.status;
+                document.getElementById('f_notes').value = c.notes || '';
+            } else {
+                document.getElementById('modalTitle').textContent = '新增客户';
+                document.getElementById('editId').value = '';
+                ['f_company','f_contact','f_phone','f_notes'].forEach(i => document.getElementById(i).value = '');
+                document.getElementById('f_source').value = '自然流量';
+                document.getElementById('f_status').value = 'active';
+            }
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+        function saveClient() {
+            const company = document.getElementById('f_company').value.trim();
+            const contact = document.getElementById('f_contact').value.trim();
+            if (!company || !contact) { alert('请填写公司名称和联系人'); return; }
+            const data = {
+                company, contact,
+                phone: document.getElementById('f_phone').value.trim(),
+                source: document.getElementById('f_source').value,
+                status: document.getElementById('f_status').value,
+                notes: document.getElementById('f_notes').value.trim(),
+                updatedAt: new Date().toISOString()
+            };
+            const editId = document.getElementById('editId').value;
+            if (editId) {
+                const idx = clients.findIndex(c => c.id == editId);
+                if (idx >= 0) clients[idx] = { ...clients[idx], ...data };
+            } else {
+                data.id = Date.now();
+                data.createdAt = new Date().toISOString();
+                clients.push(data);
+            }
+            closeModal();
+            save();
+        }
+
+        function editClient(id) { openModal(id); }
+        function deleteClient(id) { if (confirm('确定删除此客户？')) { clients = clients.filter(c => c.id !== id); save(); } }
+
+        function exportCSV() {
+            if (clients.length === 0) { alert('暂无数据可导出'); return; }
+            const header = '公司名称,联系人,电话,来源,状态,备注,创建时间\n';
+            const rows = clients.map(c => [c.company, c.contact, c.phone||'', c.source||'', c.status, (c.notes||'').replace(/,/g,'，'), c.createdAt||''].join(',')).join('\n');
+            download(header + rows, 'crm-export.csv', 'text/csv');
+        }
+
+        function exportJSON() {
+            download(JSON.stringify(clients, null, 2), 'crm-backup.json', 'application/json');
+        }
+
+        function importJSON(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (Array.isArray(data)) { clients = data; save(); alert('导入成功！共 ' + data.length + ' 条客户记录'); }
+                    else alert('文件格式不正确');
+                } catch { alert('文件解析失败'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function download(content, filename, type) {
+            const blob = new Blob(['\ufeff' + content], { type: type + ';charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+        // Init
+        updateStats();
+        renderTable();
+    </script>
+</body>
+</html>
