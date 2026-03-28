@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报价计算器 - 服务行业快速报价</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f4f8; color: #1e293b; }
+        .header { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .section { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .section h3 { font-size: 16px; margin-bottom: 16px; }
+        .service-list { display: flex; flex-direction: column; gap: 10px; }
+        .service-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .service-item:hover { border-color: #a855f7; }
+        .service-item.selected { border-color: #7c3aed; background: #f5f3ff; }
+        .service-item .name { font-weight: 600; font-size: 14px; }
+        .service-item .desc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+        .service-item .price { font-weight: 700; color: #7c3aed; white-space: nowrap; }
+        .service-item .check { width: 20px; height: 20px; border: 2px solid #cbd5e1; border-radius: 50%; margin-right: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .service-item.selected .check { border-color: #7c3aed; background: #7c3aed; color: white; }
+        .options { margin-top: 12px; }
+        .option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .option-row label { font-size: 14px; min-width: 80px; }
+        .option-row input, .option-row select { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        .discount { display: flex; gap: 8px; margin-top: 12px; }
+        .discount button { flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .discount button.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .result { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 16px; }
+        .result .total-label { font-size: 14px; opacity: 0.9; }
+        .result .total-amount { font-size: 42px; font-weight: 800; margin: 8px 0; }
+        .result .total-note { font-size: 12px; opacity: 0.8; }
+        .result .original { text-decoration: line-through; opacity: 0.6; font-size: 16px; margin-bottom: 4px; }
+        .actions { display: flex; gap: 10px; }
+        .actions button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-copy { background: #7c3aed; color: white; }
+        .btn-share { background: #f1f5f9; color: #475569; }
+        .breakdown { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); }
+        .breakdown-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; opacity: 0.9; }
+        .demo-badge { position: fixed; top: 10px; right: 10px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 100; }
+        .customer-info { margin-bottom: 16px; }
+        .customer-info input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="demo-badge">🎬 演示案例</div>
+    <div class="header">
+        <h1>🧮 报价计算器</h1>
+        <p>装修公司/服务商快速报价 · 一键生成报价单</p>
+    </div>
+    <div class="container">
+        <div class="section">
+            <h3>👤 客户信息</h3>
+            <div class="customer-info">
+                <input type="text" id="customerName" placeholder="客户姓名">
+                <input type="text" id="projectAddr" placeholder="项目地址">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🛠️ 选择服务项目（装修示例）</h3>
+            <div class="service-list" id="serviceList"></div>
+        </div>
+
+        <div class="section">
+            <h3>⚙️ 附加选项</h3>
+            <div class="options">
+                <div class="option-row">
+                    <label>面积(㎡)</label>
+                    <input type="number" id="area" value="100" min="1" onchange="calculate()">
+                </div>
+                <div class="option-row">
+                    <label>楼层</label>
+                    <select id="floor" onchange="calculate()">
+                        <option value="1">1-3楼（无附加）</option>
+                        <option value="1.05">4-6楼（+5%）</option>
+                        <option value="1.1">7楼以上（+10%）</option>
+                    </select>
+                </div>
+            </div>
+            <div class="discount">
+                <button class="active" onclick="setDiscount(1, this)">无折扣</button>
+                <button onclick="setDiscount(0.95, this)">95折</button>
+                <button onclick="setDiscount(0.9, this)">9折</button>
+                <button onclick="setDiscount(0.85, this)">85折</button>
+            </div>
+        </div>
+
+        <div class="result" id="resultPanel">
+            <div class="total-label">报价总计</div>
+            <div class="original" id="originalPrice" style="display:none"></div>
+            <div class="total-amount" id="totalPrice">¥0</div>
+            <div class="total-note" id="totalNote">请先选择服务项目</div>
+            <div class="breakdown" id="breakdown"></div>
+        </div>
+
+        <div class="actions">
+            <button class="btn-copy" onclick="copyQuote()">📋 复制报价单</button>
+            <button class="btn-share" onclick="shareQuote()">📤 分享给客户</button>
+        </div>
+    </div>
+
+    <script>
+        const services = [
+            { id: 1, name: '墙面乳胶漆', desc: '含基层处理+底漆+面漆', unitPrice: 35, unit: '㎡' },
+            { id: 2, name: '地面瓷砖铺贴', desc: '含水泥砂浆+人工', unitPrice: 55, unit: '㎡' },
+            { id: 3, name: '水电改造', desc: '含材料+开槽+封槽', unitPrice: 120, unit: '㎡' },
+            { id: 4, name: '厨卫防水', desc: '东方雨虹防水涂料', unitPrice: 80, unit: '㎡' },
+            { id: 5, name: '吊顶安装', desc: '轻钢龙骨+石膏板', unitPrice: 140, unit: '㎡' },
+            { id: 6, name: '全屋定制柜', desc: '颗粒板/E0级环保', unitPrice: 680, unit: '延米' },
+            { id: 7, name: '成品保护', desc: '门窗+地面+电梯保护', unitPrice: 15, unit: '㎡' },
+            { id: 8, name: '垃圾清运', desc: '含上下楼搬运', unitPrice: 800, unit: '套' },
+        ];
+
+        let selectedServices = new Set();
+        let discount = 1;
+
+        function init() {
+            const list = document.getElementById('serviceList');
+            list.innerHTML = services.map(s => `
+                <div class="service-item" data-id="${s.id}" onclick="toggleService(${s.id}, this)">
+                    <div style="display:flex;align-items:center">
+                        <div class="check">${selectedServices.has(s.id) ? '✓' : ''}</div>
+                        <div>
+                            <div class="name">${s.name}</div>
+                            <div class="desc">${s.desc} · ¥${s.unitPrice}/${s.unit}</div>
+                        </div>
+                    </div>
+                    <div class="price">¥${s.unitPrice}/${s.unit}</div>
+                </div>
+            `).join('');
+            calculate();
+        }
+
+        function toggleService(id, el) {
+            if (selectedServices.has(id)) { selectedServices.delete(id); el.classList.remove('selected'); }
+            else { selectedServices.add(id); el.classList.add('selected'); }
+            el.querySelector('.check').textContent = selectedServices.has(id) ? '✓' : '';
+            calculate();
+        }
+
+        function setDiscount(d, btn) {
+            discount = d;
+            document.querySelectorAll('.discount button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calculate();
+        }
+
+        function calculate() {
+            const area = parseFloat(document.getElementById('area').value) || 100;
+            const floor = parseFloat(document.getElementById('floor').value);
+            let total = 0;
+            const items = [];
+
+            selectedServices.forEach(id => {
+                const s = services.find(x => x.id === id);
+                let amount;
+                if (s.unit === '㎡') amount = s.unitPrice * area;
+                else amount = s.unitPrice;
+                items.push({ name: s.name, unitPrice: s.unitPrice, unit: s.unit, amount });
+                total += amount;
+            });
+
+            total *= floor;
+            const original = total;
+            total *= discount;
+
+            const panel = document.getElementById('resultPanel');
+            document.getElementById('totalPrice').textContent = `¥${total.toFixed(0)}`;
+            document.getElementById('totalNote').textContent = selectedServices.size > 0 ? `含${selectedServices.size}项服务 · ${area}㎡` : '请先选择服务项目';
+
+            const origEl = document.getElementById('originalPrice');
+            if (discount < 1 && original > 0) {
+                origEl.style.display = 'block';
+                origEl.textContent = `原价 ¥${original.toFixed(0)}`;
+            } else { origEl.style.display = 'none'; }
+
+            document.getElementById('breakdown').innerHTML = items.map(i =>
+                `<div class="breakdown-item"><span>${i.name} (${i.unitPrice}×${i.unit})</span><span>¥${i.amount.toFixed(0)}</span></div>`
+            ).join('');
+        }
+
+        function copyQuote() {
+            const name = document.getElementById('customerName').value || '客户';
+            const addr = document.getElementById('projectAddr').value || '';
+            const area = document.getElementById('area').value;
+            let text = `📋 装修报价单\n━━━━━━━━━━━━\n客户：${name}\n${addr ? '地址：' + addr + '\n' : ''}面积：${area}㎡\n\n`;
+            selectedServices.forEach(id => {
+                const s = services.find(x => x.id === id);
+                const a = s.unit === '㎡' ? s.unitPrice * area : s.unitPrice;
+                text += `• ${s.name}：¥${a.toFixed(0)}\n`;
+            });
+            const total = parseFloat(document.getElementById('totalPrice').textContent.replace('¥', ''));
+            text += `━━━━━━━━━━━━\n合计：¥${total.toFixed(0)}\n\n💡 以上报价含材料及人工\n📅 报价有效期：7天`;
+            navigator.clipboard.writeText(text).then(() => alert('报价单已复制！可直接粘贴发给客户'));
+        }
+
+        function shareQuote() { copyQuote(); }
+
+        init();
+    </script>
+</body>
+</html>
