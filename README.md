@@ -13,6 +13,9 @@
 | [智能待办事项](demo-cases/case1-smart-todo.html) | AI自动优先级排序、智能提醒、本地存储 | 浏览器直接打开 |
 | [轻量CRM客户管理](demo-cases/case2-mini-crm.html) | 客户信息管理、跟进记录、CSV/JSON导出 | 浏览器直接打开 |
 | [Excel数据清洗工具](demo-cases/case3-excel-cleaner.html) | 上传Excel、智能去重、筛选排序、导出 | 浏览器直接打开 |
+| [客户记账本](demo-cases/case4-kehu-bookkeeper.html) | 客户欠款记录、催款提醒、账目统计 | 浏览器直接打开 |
+| [报价计算器](demo-cases/case5-baojia-calc.html) | 装修/服务商快速报价，勾选项目→自动算价 | 浏览器直接打开 |
+| [小商店记账本](demo-cases/case6-shop-bookkeeper.html) | 扫码记账、利润统计、月报图表、本地存储 | 浏览器直接打开 |
 
 所有演示案例均使用纯前端技术（HTML + JavaScript），数据仅存储在浏览器本地，无需服务器。
 
