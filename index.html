@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI定制工具 - 把你的想法变成工具</title>
+    <meta name="description" content="非技术人员也能拥有专属软件。你描述需求，我用AI帮你写代码，24小时内交付。">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --accent: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --radius: 12px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #7c3aed 100%);
+            color: white;
+            padding: 80px 20px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .hero h1 {
+            font-size: 2.8em;
+            margin-bottom: 16px;
+            position: relative;
+            font-weight: 800;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 32px;
+            position: relative;
+        }
+        .hero-cta {
+            display: inline-flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+        }
+        .btn {
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #1e293b;
+        }
+        .btn-primary:hover { background: #d97706; transform: translateY(-2px); }
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        .btn-outline:hover { border-color: white; background: rgba(255,255,255,0.1); }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 30px 20px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .stat-label { color: var(--text-light); font-size: 0.9em; }
+
+        /* Sections */
+        .section {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 12px;
+        }
+        .section-sub {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 48px;
+            font-size: 1.1em;
+        }
+
+        /* How it works */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+        }
+        .step {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 32px 24px;
+            text-align: center;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .step-num {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin: 0 auto 16px;
+        }
+        .step h3 { margin-bottom: 8px; }
+        .step p { color: var(--text-light); font-size: 0.95em; }
+
+        /* Demo cases */
+        .demos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .demo-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .demo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+        }
+        .demo-thumb {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+            background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+        }
+        .demo-info { padding: 24px; }
+        .demo-info h3 { margin-bottom: 8px; }
+        .demo-info p { color: var(--text-light); margin-bottom: 16px; font-size: 0.95em; }
+        .demo-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .tag {
+            background: #eff6ff;
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .demo-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .demo-link:hover { text-decoration: underline; }
+
+        /* Pricing */
+        .pricing {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .price-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 32px;
+            border: 2px solid var(--border);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .price-card.featured {
+            border-color: var(--primary);
+            position: relative;
+        }
+        .price-card.featured::before {
+            content: '最受欢迎';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .price-card:hover { transform: translateY(-4px); }
+        .price-amount {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 16px 0 8px;
+        }
+        .price-desc { color: var(--text-light); margin-bottom: 24px; }
+        .price-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+        .price-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .price-features li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* Examples */
+        .examples {
+            background: #f1f5f9;
+            border-radius: var(--radius);
+            padding: 32px;
+            margin-top: 48px;
+        }
+        .examples h3 { margin-bottom: 16px; }
+        .example-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+        .example-item {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .example-icon { font-size: 1.5em; }
+
+        /* CTA */
+        .cta-section {
+            background: linear-gradient(135deg, #1e3a5f, #2563eb);
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .cta-section h2 { font-size: 2em; margin-bottom: 16px; }
+        .cta-section p { opacity: 0.9; margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+        /* Contact */
+        .contact-methods {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+        .contact-item {
+            background: rgba(255,255,255,0.15);
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 2em; }
+            .hero p { font-size: 1.1em; }
+            .stats { gap: 24px; }
+            .stat-value { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+    <h1>把你的想法<span>变成工具</span></h1>
+    <p>不需要会写代码。你描述需求，我用AI帮你做出来。<br>24小时内交付，价格是传统开发的十分之一。</p>
+    <div class="hero-cta">
+        <a href="#demos" class="btn btn-primary">看演示案例 →</a>
+        <a href="#pricing" class="btn btn-outline">查看价格</a>
+    </div>
+</section>
+
+<!-- Stats -->
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">24h</div>
+        <div class="stat-label">交付周期</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">¥2,000起</div>
+        <div class="stat-label">起步价格</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">源码交付</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">技术门槛</div>
+    </div>
+</div>
+
+<!-- How it works -->
+<section class="section">
+    <h2 class="section-title">怎么合作？</h2>
+    <p class="section-sub">四步搞定，不需要懂任何技术</p>
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <h3>说需求</h3>
+            <p>用大白话告诉我你想要什么工具。不用写文档，聊天就行。</p>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <h3>我报价</h3>
+            <p>根据复杂度报价。简单工具2000起，不满意不收钱。</p>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <h3>AI开发</h3>
+            <p>用AI快速生成代码，自动测试，确保能用好用。</p>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <h3>交付验收</h3>
+            <p>给你一个可以直接打开使用的工具 + 源代码 + 使用说明。</p>
+        </div>
+    </div>
+</section>
+
+<!-- Demo cases -->
+<section class="section" id="demos" style="background: white;">
+    <h2 class="section-title">演示案例</h2>
+    <p class="section-sub">点击即可体验，数据存在你的浏览器里，不会上传</p>
+    <div class="demos">
+        <div class="demo-card">
+            <div class="demo-thumb">📋</div>
+            <div class="demo-info">
+                <h3>智能待办事项</h3>
+                <p>AI自动分析任务优先级，智能分类，一键完成。再也不用纠结"先做哪个"。</p>
+                <div class="demo-tags">
+                    <span class="tag">个人效率</span>
+                    <span class="tag">AI排序</span>
+                    <span class="tag">本地存储</span>
+                </div>
+                <a href="demo-cases/case1-smart-todo.html" class="demo-link">打开体验 →</a>
+            </div>
+        </div>
+        <div class="demo-card">
+            <div class="demo-thumb">👥</div>
+            <div class="demo-info">
+                <h3>轻量CRM客户管理</h3>
+                <p>客户信息录入、跟进记录、筛选搜索、CSV/JSON导出。小团队够用的CRM。</p>
+                <div class="demo-tags">
+                    <span class="tag">小企业管理</span>
+                    <span class="tag">数据导出</span>
+                    <span class="tag">跟进记录</span>
+                </div>
+                <a href="demo-cases/case2-mini-crm.html" class="demo-link">打开体验 →</a>
+            </div>
+        </div>
+        <div class="demo-card">
+            <div class="demo-thumb">📊</div>
+            <div class="demo-info">
+                <h3>Excel数据清洗工具</h3>
+                <p>上传Excel，智能去重、筛选排序、缺失值处理，一键导出干净数据。</p>
+                <div class="demo-tags">
+                    <span class="tag">数据处理</span>
+                    <span class="tag">Excel</span>
+                    <span class="tag">智能去重</span>
+                </div>
+                <a href="demo-cases/case3-excel-cleaner.html" class="demo-link">打开体验 →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- More examples -->
+    <div class="examples">
+        <h3>还能做什么？</h3>
+        <div class="example-list">
+            <div class="example-item">
+                <span class="example-icon">📝</span>
+                <span>合同模板生成器</span>
+            </div>
+            <div class="example-item">
+                <span class="example-icon">💰</span>
+                <span>记账/报销工具</span>
+            </div>
+            <div class="example-item">
+                <span class="example-icon">📅</span>
+                <span>排班/日程管理</span>
+            </div>
+            <div class="example-item">
+                <span class="example-icon">📦</span>
+                <span>库存/进销存</span>
+            </div>
+            <div class="example-item">
+                <span class="example-icon">📧</span>
+                <span>邮件/消息自动发送</span>
+            </div>
+            <div class="example-item">
+                <span class="example-icon">📈</span>
+                <span>数据报表/可视化</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="section" id="pricing">
+    <h2 class="section-title">价格透明</h2>
+    <p class="section-sub">按复杂度分级，没有隐藏费用</p>
+    <div class="pricing">
+        <div class="price-card">
+            <h3>简单工具</h3>
+            <div class="price-amount">¥2,000 ~ 5,000</div>
+            <p class="price-desc">单页面、小功能工具</p>
+            <ul class="price-features">
+                <li>单页面应用</li>
+                <li>基础数据存储</li>
+                <li>1次修改</li>
+                <li>源码 + 使用说明</li>
+                <li>3天内交付</li>
+            </ul>
+        </div>
+        <div class="price-card featured">
+            <h3>中等工具</h3>
+            <div class="price-amount">¥5,000 ~ 10,000</div>
+            <p class="price-desc">多功能工具，最常定制的类型</p>
+            <ul class="price-features">
+                <li>多页面/多功能</li>
+                <li>数据导入导出</li>
+                <li>3次修改</li>
+                <li>源码 + 文档 + 视频教程</li>
+                <li>3天内交付</li>
+            </ul>
+        </div>
+        <div class="price-card">
+            <h3>复杂工具</h3>
+            <div class="price-amount">¥10,000 ~ 50,000</div>
+            <p class="price-desc">完整系统，多用户/多端</p>
+            <ul class="price-features">
+                <li>完整前后端系统</li>
+                <li>用户管理/权限</li>
+                <li>API集成</li>
+                <li>5次修改 + 1个月维护</li>
+                <li>7天内交付</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <h2>有一个想法想变成工具？</h2>
+    <p>哪怕只是一个模糊的想法，也欢迎来聊。不收咨询费，不合适直接说。</p>
+    <div class="hero-cta">
+        <a href="https://github.com/DMNO1/ai-custom-tools" class="btn btn-primary" target="_blank">查看GitHub →</a>
+    </div>
+    <div class="contact-methods">
+        <div class="contact-item">📧 微信咨询</div>
+        <div class="contact-item">💬 闲鱼搜"AI定制工具"</div>
+        <div class="contact-item">🌐 V2EX私信</div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <p>AI定制工具开发服务 · 把想法变成工具 · 源码100%交付</p>
+</footer>
+
+</body>
+</html>
